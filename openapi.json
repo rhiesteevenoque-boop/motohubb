@@ -1,0 +1,444 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MotoHub API",
+    "version": "1.0.0",
+    "description": "REST API for MotoHub Professional. Start the included local ASP.NET Core API with `dotnet run --project MotoHub.Api` before sending requests. The website demo still stores its own data in browser localStorage; API data is stored separately in a local JSON file. Prices are shown in Philippine pesos (PHP)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Included local ASP.NET Core API"
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Rider registration, login, and password assistance" },
+    { "name": "Account", "description": "Current rider profile and local preferences" },
+    { "name": "Services", "description": "Motorcycle maintenance service catalogue" },
+    { "name": "Parts", "description": "Parts catalogue and shopping cart" },
+    { "name": "Motorcycles", "description": "The signed-in rider's garage" },
+    { "name": "Bookings", "description": "Service booking requests and status" },
+    { "name": "Notifications", "description": "Current rider's notifications" },
+    { "name": "Admin", "description": "Administrator booking, rider, and service management" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Create a rider account",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Account created and signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "description": "An account with this email already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign in",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign out and invalidate the current session",
+        "responses": { "204": { "description": "Signed out" }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Request password reset instructions",
+        "description": "Development stub: validates the address and returns 202 but does not send email. A production implementation should send email and return the same response whether or not the email is registered.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["email"], "properties": { "email": { "type": "string", "format": "email" } } } } }
+        },
+        "responses": { "202": { "description": "Request accepted" }, "400": { "$ref": "#/components/responses/BadRequest" } }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get the signed-in account",
+        "responses": {
+          "200": { "description": "Current account", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "patch": {
+        "tags": ["Account"],
+        "summary": "Update the signed-in profile",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProfileUpdate" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated account", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "description": "Email is already in use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/me/preferences": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get account preferences",
+        "responses": { "200": { "description": "Saved preferences", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Preferences" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      },
+      "patch": {
+        "tags": ["Account"],
+        "summary": "Save account preferences",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Preferences" } } } },
+        "responses": { "200": { "description": "Saved preferences", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Preferences" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": ["Services"],
+        "summary": "List motorcycle service options",
+        "security": [],
+        "responses": { "200": { "description": "Service catalogue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Service" } } } } } }
+      }
+    },
+    "/parts": {
+      "get": {
+        "tags": ["Parts"],
+        "summary": "List and search parts",
+        "security": [],
+        "parameters": [
+          { "name": "search", "in": "query", "description": "Match part name or category", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "description": "Filter by exact category name", "schema": { "type": "string", "example": "Engine" } }
+        ],
+        "responses": { "200": { "description": "Matching parts", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Part" } } } } } }
+      }
+    },
+    "/parts/{partId}": {
+      "get": {
+        "tags": ["Parts"],
+        "summary": "Get a part",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/PartId" }],
+        "responses": { "200": { "description": "Part details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Part" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/motorcycles": {
+      "get": {
+        "tags": ["Motorcycles"],
+        "summary": "List motorcycles in the signed-in rider's garage",
+        "responses": { "200": { "description": "Rider's motorcycles", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Motorcycle" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      },
+      "post": {
+        "tags": ["Motorcycles"],
+        "summary": "Add a motorcycle to the garage",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MotorcycleInput" } } } },
+        "responses": { "201": { "description": "Motorcycle added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Motorcycle" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/motorcycles/{motorcycleId}": {
+      "delete": {
+        "tags": ["Motorcycles"],
+        "summary": "Remove a motorcycle from the garage",
+        "parameters": [{ "$ref": "#/components/parameters/MotorcycleId" }],
+        "responses": { "204": { "description": "Motorcycle removed" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/bookings": {
+      "get": {
+        "tags": ["Bookings"],
+        "summary": "List the signed-in rider's bookings",
+        "responses": { "200": { "description": "Rider's bookings", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Booking" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      },
+      "post": {
+        "tags": ["Bookings"],
+        "summary": "Request a service booking",
+        "description": "The motorcycle must belong to the signed-in rider. The server determines the service price and starts the booking in Pending status.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BookingRequest" } } } },
+        "responses": { "201": { "description": "Booking created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Booking" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/bookings/{bookingId}": {
+      "get": {
+        "tags": ["Bookings"],
+        "summary": "Get a booking",
+        "parameters": [{ "$ref": "#/components/parameters/BookingId" }],
+        "responses": { "200": { "description": "Booking details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Booking" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/bookings/{bookingId}/status": {
+      "patch": {
+        "tags": ["Bookings"],
+        "summary": "Cancel your booking",
+        "description": "Riders may cancel their own Pending or Confirmed bookings. Administrators should use the admin status endpoint to manage all booking states.",
+        "parameters": [{ "$ref": "#/components/parameters/BookingId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "enum": ["Cancelled"] } } } } } },
+        "responses": { "200": { "description": "Booking cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Booking" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "description": "Booking cannot be cancelled in its current state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } }
+      }
+    },
+    "/cart": {
+      "get": {
+        "tags": ["Parts"],
+        "summary": "Get the signed-in rider's cart",
+        "responses": { "200": { "description": "Cart and current subtotal", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/cart/items": {
+      "post": {
+        "tags": ["Parts"],
+        "summary": "Add a part to the cart",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["partId"], "properties": { "partId": { "type": "string" }, "quantity": { "type": "integer", "minimum": 1, "default": 1 } } } } } },
+        "responses": { "200": { "description": "Updated cart", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/cart/items/{partId}": {
+      "patch": {
+        "tags": ["Parts"],
+        "summary": "Change a cart item's quantity",
+        "parameters": [{ "$ref": "#/components/parameters/PartId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["quantity"], "properties": { "quantity": { "type": "integer", "minimum": 1 } } } } } },
+        "responses": { "200": { "description": "Updated cart", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "delete": {
+        "tags": ["Parts"],
+        "summary": "Remove a part from the cart",
+        "parameters": [{ "$ref": "#/components/parameters/PartId" }],
+        "responses": { "200": { "description": "Updated cart", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cart" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/cart/checkout": {
+      "post": {
+        "tags": ["Parts"],
+        "summary": "Place a demo parts order",
+        "description": "The current front-end only demonstrates checkout; this contract does not process payment or create a real shipment.",
+        "responses": { "201": { "description": "Order created", "content": { "application/json": { "schema": { "type": "object", "required": ["id", "total", "status"], "properties": { "id": { "type": "string" }, "total": { "type": "number", "format": "float", "example": 320 }, "status": { "type": "string", "example": "Demo order placed" } } } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "List the signed-in rider's notifications",
+        "responses": { "200": { "description": "Rider's notifications", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } }
+      }
+    },
+    "/admin/bookings": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all bookings",
+        "description": "Administrator role required.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "All bookings", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Booking" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/admin/bookings/{bookingId}/status": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Update a booking's status",
+        "description": "Administrator role required.",
+        "parameters": [{ "$ref": "#/components/parameters/BookingId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["status"], "properties": { "status": { "$ref": "#/components/schemas/BookingStatus" } } } } } },
+        "responses": { "200": { "description": "Updated booking", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Booking" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/admin/riders": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List registered riders",
+        "description": "Administrator role required.",
+        "responses": { "200": { "description": "Rider directory", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Account" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      }
+    },
+    "/admin/services/{serviceId}": {
+      "patch": {
+        "tags": ["Admin", "Services"],
+        "summary": "Update a service price",
+        "description": "Administrator role required.",
+        "parameters": [{ "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["price"], "properties": { "price": { "type": "number", "format": "float", "minimum": 0, "example": 350 } } } } } },
+        "responses": { "200": { "description": "Updated service", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Service" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Get a token from POST /auth/login or /auth/register, then supply it as a Bearer token." }
+    },
+    "parameters": {
+      "PartId": { "name": "partId", "in": "path", "required": true, "schema": { "type": "string" } },
+      "MotorcycleId": { "name": "motorcycleId", "in": "path", "required": true, "schema": { "type": "string" } },
+      "BookingId": { "name": "bookingId", "in": "path", "required": true, "schema": { "type": "string" } }
+    },
+    "responses": {
+      "BadRequest": { "description": "Request validation failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Authentication required or token invalid", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Forbidden": { "description": "Administrator permission required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Resource not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string", "example": "The requested resource was not found." }, "code": { "type": "string", "example": "NOT_FOUND" } }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "example": "Alex Rider" },
+          "email": { "type": "string", "format": "email", "example": "alex@example.com" },
+          "phone": { "type": "string", "example": "+63 912 345 6789" },
+          "password": { "type": "string", "format": "password", "minLength": 8 }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password" } }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": ["accessToken", "tokenType", "account"],
+        "properties": {
+          "accessToken": { "type": "string", "description": "Backend-issued token" },
+          "tokenType": { "type": "string", "example": "Bearer" },
+          "account": { "$ref": "#/components/schemas/Account" }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "required": ["id", "name", "email", "role"],
+        "properties": {
+          "id": { "type": "string", "example": "usr_123" },
+          "name": { "type": "string", "example": "Alex Rider" },
+          "email": { "type": "string", "format": "email", "example": "alex@example.com" },
+          "phone": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["user", "admin"] }
+        }
+      },
+      "ProfileUpdate": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": { "name": { "type": "string", "minLength": 1 }, "email": { "type": "string", "format": "email" }, "phone": { "type": "string" } }
+      },
+      "Preferences": {
+        "type": "object",
+        "description": "Preference values depend on the options enabled by the backend.",
+        "additionalProperties": true,
+        "example": { "emailNotifications": true }
+      },
+      "Service": {
+        "type": "object",
+        "required": ["id", "name", "description", "price"],
+        "properties": {
+          "id": { "type": "string", "example": "oil" },
+          "name": { "type": "string", "example": "Oil Change" },
+          "description": { "type": "string", "example": "Premium oil and filter replacement" },
+          "price": { "type": "number", "format": "float", "example": 350 },
+          "icon": { "type": "string", "nullable": true }
+        }
+      },
+      "Part": {
+        "type": "object",
+        "required": ["id", "name", "category", "price"],
+        "properties": {
+          "id": { "type": "string", "example": "oilpart" },
+          "name": { "type": "string", "example": "Engine Oil 1L" },
+          "category": { "type": "string", "example": "Maintenance" },
+          "price": { "type": "number", "format": "float", "example": 320 },
+          "icon": { "type": "string", "nullable": true }
+        }
+      },
+      "MotorcycleInput": {
+        "type": "object",
+        "required": ["make", "model", "year"],
+        "properties": {
+          "make": { "type": "string", "example": "Honda" },
+          "model": { "type": "string", "example": "Click 160" },
+          "year": { "type": "integer", "example": 2024 },
+          "plate": { "type": "string", "nullable": true },
+          "engine": { "type": "string", "nullable": true },
+          "color": { "type": "string", "nullable": true }
+        }
+      },
+      "Motorcycle": {
+        "allOf": [
+          { "$ref": "#/components/schemas/MotorcycleInput" },
+          { "type": "object", "required": ["id"], "properties": { "id": { "type": "string", "example": "bike_123" } } }
+        ]
+      },
+      "BookingRequest": {
+        "type": "object",
+        "required": ["serviceId", "motorcycleId", "date", "time"],
+        "properties": {
+          "serviceId": { "type": "string", "example": "oil" },
+          "motorcycleId": { "type": "string", "example": "bike_123" },
+          "date": { "type": "string", "format": "date", "example": "2026-11-03" },
+          "time": { "type": "string", "example": "10:30" },
+          "notes": { "type": "string", "nullable": true }
+        }
+      },
+      "BookingStatus": { "type": "string", "enum": ["Pending", "Confirmed", "Completed", "Cancelled"] },
+      "Booking": {
+        "type": "object",
+        "required": ["id", "reference", "serviceId", "service", "motorcycleId", "motorcycle", "price", "date", "time", "status", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "example": "booking_123" },
+          "reference": { "type": "string", "example": "MH-12345678" },
+          "serviceId": { "type": "string", "example": "oil" },
+          "service": { "type": "string", "example": "Oil Change" },
+          "motorcycleId": { "type": "string", "example": "bike_123" },
+          "motorcycle": { "type": "string", "example": "Honda Click 160" },
+          "price": { "type": "number", "format": "float", "example": 350 },
+          "date": { "type": "string", "format": "date" },
+          "time": { "type": "string", "example": "10:30" },
+          "notes": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/BookingStatus" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CartItem": {
+        "type": "object",
+        "required": ["partId", "quantity", "part"],
+        "properties": {
+          "partId": { "type": "string", "example": "oilpart" },
+          "quantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "part": { "$ref": "#/components/schemas/Part" }
+        }
+      },
+      "Cart": {
+        "type": "object",
+        "required": ["items", "subtotal"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/CartItem" } },
+          "subtotal": { "type": "number", "format": "float", "example": 640 }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "text", "date"],
+        "properties": {
+          "id": { "type": "string", "example": "notification_123" },
+          "text": { "type": "string", "example": "Your booking request was received." },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
