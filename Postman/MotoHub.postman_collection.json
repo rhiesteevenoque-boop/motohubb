@@ -1,0 +1,135 @@
+{
+  "info": {
+    "_postman_id": "c876e2e7-7145-4bc8-8cd0-1fb26a8a02f1",
+    "name": "MotoHub API",
+    "description": "Requests for the MotoHub local API. Start MotoHub.Api first. Login requests save the access token into this collection automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "motorcycleId", "value": "" },
+    { "key": "bookingId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Check API is running", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "http://localhost:3000/health" } }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register rider",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alex Rider\",\n  \"email\": \"alex@example.com\",\n  \"phone\": \"+63 912 345 6789\",\n  \"password\": \"RiderDemo123!\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Register a demo rider. Change the email if it is already registered."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code === 201) { pm.collectionVariables.set('accessToken', pm.response.json().accessToken); }"] } }]
+        },
+        {
+          "name": "Login rider",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"alex@example.com\",\n  \"password\": \"RiderDemo123!\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login succeeds', function () { pm.response.to.have.status(200); });", "if (pm.response.code === 200) { pm.collectionVariables.set('accessToken', pm.response.json().accessToken); }"] } }]
+        },
+        {
+          "name": "Login as seeded admin",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@motohub.com\",\n  \"password\": \"Admin123!\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "For testing admin endpoints. This seeded credential is for local development only."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin login succeeds', function () { pm.response.to.have.status(200); });", "if (pm.response.code === 200) { pm.collectionVariables.set('accessToken', pm.response.json().accessToken); }"] } }]
+        },
+        {
+          "name": "Logout",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        { "name": "List services", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/services" } },
+        { "name": "Search parts", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/parts?search=oil" } },
+        { "name": "Get part", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/parts/oilpart" } }
+      ]
+    },
+    {
+      "name": "Account",
+      "item": [
+        { "name": "Get my profile", "request": { "method": "GET", "url": "{{baseUrl}}/me" } },
+        { "name": "Update my profile", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alex Rider\",\n  \"phone\": \"+63 912 345 6789\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/me" } },
+        { "name": "Get preferences", "request": { "method": "GET", "url": "{{baseUrl}}/me/preferences" } },
+        { "name": "Save preferences", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"emailNotifications\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/me/preferences" } }
+      ]
+    },
+    {
+      "name": "Motorcycles",
+      "item": [
+        { "name": "List my motorcycles", "request": { "method": "GET", "url": "{{baseUrl}}/motorcycles" } },
+        {
+          "name": "Add motorcycle",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"make\": \"Honda\",\n  \"model\": \"Click 160\",\n  \"year\": 2024,\n  \"plate\": \"ABC-1234\",\n  \"engine\": \"160cc\",\n  \"color\": \"Red\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/motorcycles" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code === 201) { pm.collectionVariables.set('motorcycleId', pm.response.json().id); }"] } }]
+        },
+        { "name": "Remove motorcycle", "request": { "method": "DELETE", "url": "{{baseUrl}}/motorcycles/{{motorcycleId}}" } }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        { "name": "List my bookings", "request": { "method": "GET", "url": "{{baseUrl}}/bookings" } },
+        {
+          "name": "Create booking",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"serviceId\": \"oil\",\n  \"motorcycleId\": \"{{motorcycleId}}\",\n  \"date\": \"2027-01-15\",\n  \"time\": \"10:30\",\n  \"notes\": \"Postman demo booking\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/bookings" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code === 201) { pm.collectionVariables.set('bookingId', pm.response.json().id); }"] } }]
+        },
+        { "name": "Get booking", "request": { "method": "GET", "url": "{{baseUrl}}/bookings/{{bookingId}}" } },
+        { "name": "Cancel booking", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Cancelled\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/bookings/{{bookingId}}/status" } }
+      ]
+    },
+    {
+      "name": "Parts cart",
+      "item": [
+        { "name": "Get cart", "request": { "method": "GET", "url": "{{baseUrl}}/cart" } },
+        { "name": "Add oil to cart", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"partId\": \"oilpart\",\n  \"quantity\": 1\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/cart/items" } },
+        { "name": "Change oil quantity", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"quantity\": 2\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/cart/items/oilpart" } },
+        { "name": "Remove oil from cart", "request": { "method": "DELETE", "url": "{{baseUrl}}/cart/items/oilpart" } },
+        { "name": "Demo checkout", "request": { "method": "POST", "url": "{{baseUrl}}/cart/checkout" } }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [{ "name": "List my notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } }]
+    },
+    {
+      "name": "Admin (login as admin first)",
+      "item": [
+        { "name": "List all bookings", "request": { "method": "GET", "url": "{{baseUrl}}/admin/bookings" } },
+        { "name": "Update booking status", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Confirmed\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/admin/bookings/{{bookingId}}/status" } },
+        { "name": "List riders", "request": { "method": "GET", "url": "{{baseUrl}}/admin/riders" } },
+        { "name": "Change oil service price", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"price\": 375\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/admin/services/oil" } }
+      ]
+    }
+  ]
+}
