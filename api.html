@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b10">
+  <title>MotoHub API Reference</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+  <style>
+    :root { color-scheme: dark; font-family: Arial, sans-serif; background: #080b10; color: #f4f5f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .page-header { padding: 1.5rem max(1rem, calc((100vw - 1200px) / 2)); background: #10151d; border-bottom: 1px solid #26303c; }
+    .brand { color: #f4f5f7; font-weight: 800; letter-spacing: .08em; text-decoration: none; }
+    .brand span, .accent { color: #ed3345; }
+    .page-header p { max-width: 850px; margin: .8rem 0 0; color: #c0c6d0; line-height: 1.55; }
+    .notice { max-width: 1200px; margin: 1.25rem auto; padding: 1rem 1.2rem; border: 1px solid #78414a; border-left: 4px solid #ed3345; border-radius: 8px; background: #1a1217; color: #f2dadd; line-height: 1.5; }
+    .notice strong { color: #fff; }
+    #swagger-ui { max-width: 1200px; margin: 0 auto 3rem; }
+    .swagger-ui { color: #f4f5f7; }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .information-container, .swagger-ui .scheme-container, .swagger-ui .opblock, .swagger-ui .model-box, .swagger-ui section.models { background: #111720; }
+    .swagger-ui .info .title, .swagger-ui .info p, .swagger-ui .info li, .swagger-ui .opblock-tag, .swagger-ui .opblock .opblock-summary-description, .swagger-ui .parameter__name, .swagger-ui .parameter__type, .swagger-ui .response-col_status, .swagger-ui .response-col_description, .swagger-ui .model-title, .swagger-ui .model { color: #f4f5f7; }
+    .swagger-ui .opblock .opblock-section-header { background: #1a222d; }
+    .swagger-ui .btn, .swagger-ui select { color: #18202a; }
+    .swagger-ui a { color: #ff6472; }
+    @media (max-width: 1240px) { .notice, #swagger-ui { margin-left: 1rem; margin-right: 1rem; } }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a class="brand" href="index.html">MOTO<span>HUB</span> <span class="accent">/ API</span></a>
+    <p>Interactive API reference for MotoHub’s motorcycle servicing, garage, parts, booking, account, and admin features.</p>
+  </header>
+  <aside class="notice">
+    <strong>Development API:</strong> Start the included backend with <code>dotnet run --project MotoHub.Api</code> before using “Try it out”. The website demo still stores its data in this browser’s localStorage; API data is separate. Email delivery and real payment processing are not implemented. Do not use real passwords or payment details with this demo.
+  </aside>
+  <main id="swagger-ui"></main>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    window.addEventListener('load', () => {
+      window.ui = SwaggerUIBundle({
+        url: './openapi.json',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        displayRequestDuration: true,
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout'
+      });
+    });
+  </script>
+</body>
+</html>
